@@ -1,0 +1,32 @@
+{
+  "name": "ai_dev",
+  "version": "1.0.0",
+  "description": "This repository will contain all my projects from the ALX AI for Developers II Program. They will include tools used, task and assignment performed and any other thing related.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikeboat45/AI_Dev.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mikeboat45/AI_Dev/issues"
+  },
+  "homepage": "https://github.com/mikeboat45/AI_Dev#readme",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.2.1",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

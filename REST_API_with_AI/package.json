@@ -1,0 +1,17 @@
+{
+  "name": "rest-api-with-ai",
+  "version": "1.0.0",
+  "description": "A simple REST API built with Node.js and Express that manages a collection of items stored in an in-memory array.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["rest-api", "express", "nodejs", "items-management"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
