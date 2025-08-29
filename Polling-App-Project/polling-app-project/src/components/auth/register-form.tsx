@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +15,9 @@ export function RegisterForm() {
     confirmPassword: ""
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { supabase } = useAuth()
+  const router = useRouter()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -24,14 +29,33 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    // TODO: Implement registration logic
-    console.log("Registration attempt:", formData)
-    
-    // Simulate API call
-    setTimeout(() => {
+    setError(null)
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match")
       setIsLoading(false)
-    }, 1000)
+      return
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        data: {
+          full_name: formData.name,
+        },
+      },
+    })
+
+    if (error) {
+      setError(error.message)
+      setIsLoading(false)
+    } else {
+      // On successful sign-up, Supabase sends a confirmation email.
+      // You might want to show a message to the user to check their email.
+      // For this example, we'll redirect directly to the polls page.
+      router.push("/polls")
+    }
   }
 
   return (
@@ -44,6 +68,11 @@ export function RegisterForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">
               Full Name
