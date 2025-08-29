@@ -23,11 +23,11 @@ The project uses the following technologies. Do not introduce new libraries or f
 
 ## Architecture & Code Style
 
-- Directory Structure: Follow the standard Next.js App Router structure.
-    - `/app` for routes and pages.
-    - `/components/ui` for `shadcn/ui` components.
-    - `/components/` for custom, reusable components.
-    - `/lib` for Supabase client setup, utility functions, and Server Actions.
+- Directory Structure: Follow the standard Next.js App Router structure, but all code must live inside `/src`:
+    - `/src/app` for routes and pages.
+    - `/src/components/ui` for `shadcn/ui` components.
+    - `/src/components/` for custom, reusable components.
+    - `/src/lib` for Supabase client setup, utility functions, and Server Actions.
 
 - Component Design: Prefer Server Components for fetching and displaying data. Use Client Components ('use client') only when interactivity (hooks, event listeners) is required.
 - Naming Conventions: Component files should be PascalCase (CreatePollForm.tsx). Utility and action functions should be camelCase (submitVote.ts).
