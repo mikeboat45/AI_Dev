@@ -30,10 +30,14 @@ export function PollCard({ poll, onVote }: PollCardProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
 
-  const handleVote = () => {
+  const handleVote = async () => {
     if (selectedOption && onVote) {
-      onVote(poll.id, selectedOption)
-      setHasVoted(true)
+      const result = await onVote(poll.id, selectedOption)
+      if (result.ok) {
+        setHasVoted(true)
+      } else {
+        console.error("Error voting:", result.error)
+      }
     }
   }
 
