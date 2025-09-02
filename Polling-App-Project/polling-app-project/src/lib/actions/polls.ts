@@ -110,3 +110,4 @@ export async function voteOnPoll(pollId: string, optionId: string) {
   revalidatePath("/polls");
   return { ok: true };
 }
+

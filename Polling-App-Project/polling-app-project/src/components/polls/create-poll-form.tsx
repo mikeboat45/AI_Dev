@@ -21,12 +21,23 @@ export function CreatePollForm() {
       { id: "2", text: "" }
     ]
   })
+  const [titleError, setTitleError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    
+    if (name === "title") {
+      if (value.length > 0 && value.length < 5) {
+        setTitleError("Poll title must be at least 5 characters long")
+      } else {
+        setTitleError("")
+      }
+    }
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     })
   }
 
@@ -81,6 +92,7 @@ export function CreatePollForm() {
   }
 
   const isValid = formData.title.trim() && 
+    formData.title.trim().length >= 5 &&
     formData.options.every(option => option.text.trim()) &&
     formData.options.length >= 2
 
@@ -102,11 +114,14 @@ export function CreatePollForm() {
               id="title"
               name="title"
               type="text"
-              placeholder="Enter poll title"
+              placeholder="Enter poll title (min. 5 characters)"
               value={formData.title}
               onChange={handleInputChange}
               required
             />
+            {titleError && (
+              <p className="text-sm text-red-500 mt-1">{titleError}</p>
+            )}
           </div>
           
           <div className="space-y-2">
