@@ -17,6 +17,7 @@ describe('Poll Actions', () => {
     jest.clearAllMocks();
     // Reset mock data/error for each test
     mockSupabaseClient.mockReset();
+    mockSupabaseClient.auth.getUser.mockClear();
   });
   
   // Create FormData mock
@@ -43,8 +44,13 @@ describe('Poll Actions', () => {
 
       const result = await pollsModule.createPollAction(formData as FormData);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('polls');
-      expect(mockSupabaseClient.insert).toHaveBeenCalled();
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith([{
+        title: 'Test Poll',
+        description: 'Test Description',
+        created_by: '123',
+      }]);
       expect(mockSupabaseClient.select).toHaveBeenCalled();
       expect(revalidatePath).toHaveBeenCalledWith('/polls');
       expect(result).toEqual({ ok: true, pollId: '123' });
@@ -62,17 +68,33 @@ describe('Poll Actions', () => {
 
       const result = await pollsModule.createPollAction(formData as FormData);
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('polls');
       expect(revalidatePath).not.toHaveBeenCalled();
       expect(result).toEqual({ ok: false, error: 'Database error' });
+    });
+
+    it('should return an error if the user is not authenticated', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValueOnce({ data: { user: null } });
+
+      const formData = createMockFormData({
+        title: 'Test Poll',
+        description: 'Test Description',
+        options: ['Option 1', 'Option 2'],
+      });
+
+      const result = await pollsModule.createPollAction(formData as FormData);
+
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
+      expect(result).toEqual({ ok: false, error: 'You must be logged in to create a poll.' });
     });
   });
 
   describe('getPolls', () => {
     it('should get polls successfully', async () => {
       const mockPolls = [
-        { id: '1', title: 'Poll 1', description: 'Description 1', created_at: new Date().toISOString() },
-        { id: '2', title: 'Poll 2', description: 'Description 2', created_at: new Date().toISOString() },
+        { id: '1', title: 'Poll 1', description: 'Description 1', created_at: new Date().toISOString(), created_by: { username: 'testuser' } },
+        { id: '2', title: 'Poll 2', description: 'Description 2', created_at: new Date().toISOString(), created_by: { username: 'testuser2' } },
       ];
       
       const mockOptions = [
@@ -94,6 +116,7 @@ describe('Poll Actions', () => {
       // We expect 2 polls because that's what we mocked
       expect(result.length).toBe(2);
       expect(result[0].id).toBe('1');
+      expect(result[0].createdBy).toBe('testuser');
       // We expect 2 options for the first poll because there are 2 options with poll_id '1'
       expect(result[0].options.length).toBe(2);
     });
@@ -114,6 +137,7 @@ describe('Poll Actions', () => {
 
       const result = await pollsModule.voteOnPoll('123', '456');
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('poll_options');
       expect(mockSupabaseClient.update).toHaveBeenCalled();
       expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', '456');
@@ -125,10 +149,20 @@ describe('Poll Actions', () => {
 
       const result = await pollsModule.voteOnPoll('123', '456');
 
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('poll_options');
       expect(mockSupabaseClient.update).toHaveBeenCalled();
       expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', '456');
       expect(result).toEqual({ ok: false, error: 'Database error' });
+    });
+
+    it('should return an error if the user is not authenticated', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValueOnce({ data: { user: null } });
+
+      const result = await pollsModule.voteOnPoll('123', '456');
+
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalled();
+      expect(result).toEqual({ ok: false, error: 'You must be logged in to vote.' });
     });
   });
 });

@@ -23,14 +23,7 @@ async function apiRequest<T>(
     ...options,
   }
 
-  // Add auth token if available
-  const token = localStorage.getItem('authToken')
-  if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    }
-  }
+  
 
   const response = await fetch(url, config)
   
@@ -103,19 +96,4 @@ export const pollsApi = {
   },
 }
 
-// Utility functions
-export const setAuthToken = (token: string) => {
-  localStorage.setItem('authToken', token)
-}
 
-export const getAuthToken = (): string | null => {
-  return localStorage.getItem('authToken')
-}
-
-export const removeAuthToken = () => {
-  localStorage.removeItem('authToken')
-}
-
-export const isAuthenticated = (): boolean => {
-  return !!getAuthToken()
-}

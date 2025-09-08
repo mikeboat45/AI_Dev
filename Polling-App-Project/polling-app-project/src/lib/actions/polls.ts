@@ -14,10 +14,17 @@ export async function createPollAction(formData: FormData) {
   }
 
   const supabase = getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "You must be logged in to create a poll." };
+  }
 
   const { data: poll, error: pollError } = await supabase
     .from("polls")
-    .insert([{ title, description }])
+    .insert([{ title, description, created_by: user.id }])
     .select()
     .single();
 
@@ -41,7 +48,7 @@ export async function getPolls() {
   // Get all polls
   const { data: pollsData, error: pollsError } = await supabase
     .from("polls")
-    .select("*")
+    .select("*, created_by(username)")
     .order("created_at", { ascending: false });
 
   if (pollsError) {
@@ -78,7 +85,7 @@ export async function getPolls() {
       options: pollOptions,
       totalVotes,
       createdAt: poll.created_at,
-      createdBy: poll.created_by || "Anonymous",
+      createdBy: poll.created_by.username || "Anonymous",
       isActive: true,
     };
   });
@@ -92,6 +99,13 @@ export async function voteOnPoll(pollId: string, optionId: string) {
   }
 
   const supabase = getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "You must be logged in to vote." };
+  }
 
   // Increment the votes for the selected option
   const { data, error } = await supabase

@@ -10,6 +10,9 @@ export const mockSupabaseClient = {
   single: jest.fn().mockReturnThis(),
   rpc: jest.fn().mockReturnThis(),
   count: jest.fn().mockReturnThis(),
+  auth: {
+    getUser: jest.fn().mockResolvedValue({ data: { user: { id: '123', email: 'test@example.com' } } }),
+  },
   _data: null as any,
   _error: null as any,
   _responses: [] as Array<{data: any, error: any}>,

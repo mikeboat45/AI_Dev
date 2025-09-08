@@ -48,7 +48,7 @@ export function RegisterForm() {
     })
 
     if (error) {
-      setError(error.message)
+      setError("An error occurred during registration. Please try again.")
       setIsLoading(false)
     } else {
       // On successful sign-up, Supabase sends a confirmation email.

@@ -26,7 +26,7 @@ export function LoginForm() {
     })
 
     if (error) {
-      setError(error.message)
+      setError("Invalid email or password.")
       setIsLoading(false)
     } else {
       router.push("/polls")

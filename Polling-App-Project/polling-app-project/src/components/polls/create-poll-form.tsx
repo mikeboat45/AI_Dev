@@ -21,19 +21,13 @@ export function CreatePollForm() {
       { id: "2", text: "" }
     ]
   })
-  const [titleError, setTitleError] = useState("")
+  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     
-    if (name === "title") {
-      if (value.length > 0 && value.length < 5) {
-        setTitleError("Poll title must be at least 5 characters long")
-      } else {
-        setTitleError("")
-      }
-    }
+    
     
     setFormData({
       ...formData,
@@ -78,7 +72,7 @@ export function CreatePollForm() {
     const res = await createPollAction(fd)
     setIsLoading(false)
     if (!res.ok) {
-      alert(res.error)
+      setError(res.error)
       return
     }
     setFormData({
@@ -106,6 +100,11 @@ export function CreatePollForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
           <div className="space-y-2">
             <label htmlFor="title" className="text-sm font-medium">
               Poll Title *
@@ -119,9 +118,7 @@ export function CreatePollForm() {
               onChange={handleInputChange}
               required
             />
-            {titleError && (
-              <p className="text-sm text-red-500 mt-1">{titleError}</p>
-            )}
+            
           </div>
           
           <div className="space-y-2">
