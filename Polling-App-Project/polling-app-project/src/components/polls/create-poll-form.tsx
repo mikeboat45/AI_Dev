@@ -10,7 +10,7 @@ interface PollOption {
   text: string
 }
 
-import { createPollAction } from "@/lib/actions/polls"
+import { pollsApi } from "@/lib/api"
 
 export function CreatePollForm() {
   const [formData, setFormData] = useState({
@@ -64,15 +64,10 @@ export function CreatePollForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    const fd = new FormData()
-    fd.append("title", formData.title)
-    fd.append("description", formData.description)
-    formData.options.forEach(o => fd.append("options", o.text))
-
-    const res = await createPollAction(fd)
+    const res = await pollsApi.create({ title: formData.title, description: formData.description, options: formData.options.map(o => o.text) })
     setIsLoading(false)
-    if (!res.ok) {
-      setError(res.error)
+    if (!res) {
+      setError("Failed to create poll")
       return
     }
     setFormData({

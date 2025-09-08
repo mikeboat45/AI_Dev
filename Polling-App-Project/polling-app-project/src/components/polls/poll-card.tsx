@@ -21,22 +21,19 @@ interface Poll {
   isActive: boolean
 }
 
-interface PollCardProps {
-  poll: Poll
-  onVote?: (pollId: string, optionId: string) => void
-}
+import { pollsApi } from "@/lib/api"
 
-export function PollCard({ poll, onVote }: PollCardProps) {
+export function PollCard({ poll }: { poll: Poll }) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
 
   const handleVote = async () => {
-    if (selectedOption && onVote) {
-      const result = await onVote(poll.id, selectedOption)
-      if (result.ok) {
+    if (selectedOption) {
+      const result = await pollsApi.vote({ pollId: poll.id, optionId: selectedOption })
+      if (result) {
         setHasVoted(true)
       } else {
-        console.error("Error voting:", result.error)
+        console.error("Error voting:")
       }
     }
   }

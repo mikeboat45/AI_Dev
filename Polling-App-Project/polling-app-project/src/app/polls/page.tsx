@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button"
 import { PollCard } from "@/components/polls/poll-card"
 import Link from "next/link"
-import { getPolls, voteOnPoll } from "@/lib/actions/polls"
+import { pollsApi } from "@/lib/api"
 
 export default async function PollsPage() {
-  const polls = await getPolls()
+  const polls = await pollsApi.getAll()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,7 +39,6 @@ export default async function PollsPage() {
               <PollCard 
                 key={poll.id} 
                 poll={poll} 
-                onVote={voteOnPoll}
               />
             ))
           )}

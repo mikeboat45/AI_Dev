@@ -1,6 +1,6 @@
 import { Poll, CreatePollData, VoteData, AuthResponse, User } from "@/types/poll"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = typeof window === 'undefined' ? 'http://localhost:3000/api' : '/api'
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -67,10 +67,6 @@ export const pollsApi = {
     return apiRequest<Poll[]>('/polls')
   },
 
-  getById: async (id: string): Promise<Poll> => {
-    return apiRequest<Poll>(`/polls/${id}`)
-  },
-
   create: async (pollData: CreatePollData): Promise<Poll> => {
     return apiRequest<Poll>('/polls', {
       method: 'POST',
@@ -83,16 +79,6 @@ export const pollsApi = {
       method: 'POST',
       body: JSON.stringify(voteData),
     })
-  },
-
-  delete: async (id: string): Promise<void> => {
-    return apiRequest<void>(`/polls/${id}`, {
-      method: 'DELETE',
-    })
-  },
-
-  getUserPolls: async (): Promise<Poll[]> => {
-    return apiRequest<Poll[]>('/polls/my-polls')
   },
 }
 
