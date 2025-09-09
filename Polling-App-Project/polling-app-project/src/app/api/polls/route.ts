@@ -47,6 +47,7 @@ export async function GET() {
       totalVotes,
       createdAt: poll.created_at,
       createdBy: poll.created_by || "Anonymous",
+      endsAt: poll.ends_at,
       isActive: true,
     };
   });
@@ -63,15 +64,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You must be logged in to create a poll." }, { status: 401 });
   }
 
-  const { title, description, options } = await request.json();
+  const { title, description, options, ends_at } = await request.json();
 
   if (!title || options.length < 2) {
     return NextResponse.json({ error: "Title and at least 2 options are required." }, { status: 400 });
   }
 
+  const pollData: { title: string; description?: string; created_by: string, ends_at?: string } = {
+    title,
+    description,
+    created_by: user.id,
+  };
+
+  if (ends_at) {
+    pollData.ends_at = ends_at;
+  }
+
   const { data: poll, error: pollError } = await supabase
     .from("polls")
-    .insert([{ title, description, created_by: user.id }])
+    .insert([pollData])
     .select()
     .single();
 

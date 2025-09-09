@@ -19,7 +19,8 @@ export function CreatePollForm() {
     options: [
       { id: "1", text: "" },
       { id: "2", text: "" }
-    ]
+    ],
+    ends_at: ""
   })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -64,7 +65,7 @@ export function CreatePollForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    const res = await pollsApi.create({ title: formData.title, description: formData.description, options: formData.options.map(o => o.text) })
+    const res = await pollsApi.create({ title: formData.title, description: formData.description, options: formData.options.map(o => o.text), ends_at: formData.ends_at })
     setIsLoading(false)
     if (!res) {
       setError("Failed to create poll")
@@ -76,7 +77,8 @@ export function CreatePollForm() {
       options: [
         { id: "1", text: "" },
         { id: "2", text: "" }
-      ]
+      ],
+      ends_at: ""
     })
   }
 
@@ -126,6 +128,19 @@ export function CreatePollForm() {
               type="text"
               placeholder="Enter poll description (optional)"
               value={formData.description}
+              onChange={handleInputChange}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="ends_at" className="text-sm font-medium">
+              Closing Time (Optional)
+            </label>
+            <Input
+              id="ends_at"
+              name="ends_at"
+              type="datetime-local"
+              value={formData.ends_at}
               onChange={handleInputChange}
             />
           </div>

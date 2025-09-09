@@ -18,7 +18,7 @@ interface Poll {
   totalVotes: number
   createdAt: string
   createdBy: string
-  isActive: boolean
+  endsAt?: string
 }
 
 import { pollsApi } from "@/lib/api"
@@ -27,8 +27,10 @@ export function PollCard({ poll }: { poll: Poll }) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
 
+  const isExpired = poll.endsAt && new Date(poll.endsAt) < new Date();
+
   const handleVote = async () => {
-    if (selectedOption) {
+    if (selectedOption && !isExpired) {
       const result = await pollsApi.vote({ pollId: poll.id, optionId: selectedOption })
       if (result) {
         setHasVoted(true)
@@ -49,14 +51,17 @@ export function PollCard({ poll }: { poll: Poll }) {
         <CardTitle className="flex items-center justify-between">
           {poll.title}
           <span className={`text-xs px-2 py-1 rounded-full ${
-            poll.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+            !isExpired ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
           }`}>
-            {poll.isActive ? 'Active' : 'Closed'}
+            {!isExpired ? 'Active' : 'Closed'}
           </span>
         </CardTitle>
         <CardDescription>{poll.description}</CardDescription>
         <div className="text-xs text-gray-500">
           Created by {poll.createdBy} • {new Date(poll.createdAt).toLocaleDateString()}
+          {poll.endsAt && (
+            <span> • Closes on {new Date(poll.endsAt).toLocaleString()}</span>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -64,13 +69,13 @@ export function PollCard({ poll }: { poll: Poll }) {
           {poll.options.map((option) => (
             <div key={option.id} className="relative">
               <button
-                onClick={() => !hasVoted && setSelectedOption(option.id)}
+                onClick={() => !hasVoted && !isExpired && setSelectedOption(option.id)}
                 className={`w-full p-3 text-left border rounded-lg transition-colors ${
                   selectedOption === option.id
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
-                } ${hasVoted ? 'cursor-default' : 'cursor-pointer'}`}
-                disabled={hasVoted}
+                } ${hasVoted || isExpired ? 'cursor-default' : 'cursor-pointer'}`}
+                disabled={hasVoted || isExpired}
               >
                 <div className="flex justify-between items-center">
                   <span>{option.text}</span>
@@ -78,7 +83,7 @@ export function PollCard({ poll }: { poll: Poll }) {
                     {option.votes} votes ({getVotePercentage(option.votes)}%)
                   </span>
                 </div>
-                {hasVoted && (
+                {(hasVoted || isExpired) && (
                   <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-blue-500 transition-all duration-300"
@@ -91,7 +96,7 @@ export function PollCard({ poll }: { poll: Poll }) {
           ))}
         </div>
         
-        {!hasVoted && selectedOption && (
+        {!hasVoted && !isExpired && selectedOption && (
           <Button onClick={handleVote} className="w-full">
             Vote
           </Button>
@@ -100,6 +105,12 @@ export function PollCard({ poll }: { poll: Poll }) {
         {hasVoted && (
           <div className="text-center text-sm text-green-600 font-medium">
             ✓ You have voted on this poll
+          </div>
+        )}
+
+        {isExpired && !hasVoted && (
+          <div className="text-center text-sm text-red-600 font-medium">
+            This poll has closed and is no longer accepting votes.
           </div>
         )}
         

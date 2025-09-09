@@ -17,13 +17,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Poll ID and option ID are required." }, { status: 400 });
   }
 
+  // Check if the poll is expired
+  const { data: poll } = await supabase
+    .from("polls")
+    .select("ends_at")
+    .eq("id", pollId)
+    .single();
+
+  if (poll?.ends_at && new Date(poll.ends_at) < new Date()) {
+    return NextResponse.json({ error: "This poll has closed." }, { status: 400 });
+  }
+
   // Increment the votes for the selected option
   const { data, error } = await supabase
-    .from("poll_options")
-    .update({ votes: supabase.rpc('increment_votes') })
-    .eq('id', optionId)
-    .eq('poll_id', pollId)
-    .select();
+    .rpc('increment_vote', { option_id: optionId, poll_id: pollId });
 
   if (error) {
     console.error("Error voting on poll:", error);
