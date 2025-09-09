@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -26,6 +26,13 @@ import { pollsApi } from "@/lib/api"
 export function PollCard({ poll }: { poll: Poll }) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
+  const [formattedEndsAt, setFormattedEndsAt] = useState("")
+
+  useEffect(() => {
+    if (poll.endsAt) {
+      setFormattedEndsAt(new Date(poll.endsAt).toLocaleString());
+    }
+  }, [poll.endsAt]);
 
   const isExpired = poll.endsAt && new Date(poll.endsAt) < new Date();
 
@@ -59,8 +66,8 @@ export function PollCard({ poll }: { poll: Poll }) {
         <CardDescription>{poll.description}</CardDescription>
         <div className="text-xs text-gray-500">
           Created by {poll.createdBy} • {new Date(poll.createdAt).toLocaleDateString()}
-          {poll.endsAt && (
-            <span> • Closes on {new Date(poll.endsAt).toLocaleString()}</span>
+          {formattedEndsAt && (
+            <span> • Closes on {formattedEndsAt}</span>
           )}
         </div>
       </CardHeader>
