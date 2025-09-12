@@ -56,19 +56,32 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = createRouteHandlerClient({ cookies });
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "You must be logged in to create a poll." }, { status: 401 });
+    return NextResponse.json(
+      { error: "You must be logged in to create a poll." },
+      { status: 401 }
+    );
   }
 
   const { title, description, options, ends_at } = await request.json();
 
   if (!title || options.length < 2) {
-    return NextResponse.json({ error: "Title and at least 2 options are required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Title and at least 2 options are required." },
+      { status: 400 }
+    );
   }
 
-  const pollData: { title: string; description?: string; created_by: string, ends_at?: string } = {
+  const pollData: {
+    title: string;
+    description?: string;
+    created_by: string;
+    ends_at?: string;
+  } = {
     title,
     description,
     created_by: user.id,
@@ -85,14 +98,50 @@ export async function POST(request: Request) {
     .single();
 
   if (pollError || !poll) {
-    return NextResponse.json({ error: pollError?.message || "Failed to create poll" }, { status: 500 });
+    return NextResponse.json(
+      { error: pollError?.message || "Failed to create poll" },
+      { status: 500 }
+    );
   }
 
-  const rows = options.map((text: string) => ({ poll_id: poll.id, text }));
-  const { error: optionsError } = await supabase.from("poll_options").insert(rows);
-  if (optionsError) {
-    return NextResponse.json({ error: optionsError.message }, { status: 500 });
+  const optionRows = options.map((option: { text: string }) => ({
+    poll_id: poll.id,
+    text: option.text,
+  }));
+  const { data: pollOptions, error: optionsError } = await supabase
+    .from("poll_options")
+    .insert(optionRows)
+    .select();
+
+  if (optionsError || !pollOptions) {
+    return NextResponse.json(
+      { error: optionsError?.message || "Failed to create poll options" },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json(poll);
+  const totalVotes = pollOptions.reduce(
+    (sum, option) => sum + (option.votes || 0),
+    0
+  );
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("id", poll.created_by)
+    .single();
+
+  const finalPoll = {
+    id: poll.id,
+    title: poll.title,
+    description: poll.description || "",
+    options: pollOptions.map(o => ({ id: o.id, text: o.text, votes: o.votes || 0 })),
+    totalVotes,
+    createdAt: poll.created_at,
+    createdBy: profile?.name || "Anonymous",
+    endsAt: poll.ends_at,
+    isActive: true,
+  };
+
+  return NextResponse.json(finalPoll);
 }

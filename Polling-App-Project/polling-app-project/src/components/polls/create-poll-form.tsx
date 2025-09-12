@@ -12,6 +12,9 @@ interface PollOption {
 
 import { pollsApi } from "@/lib/api"
 
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+
 export function CreatePollForm() {
   const [formData, setFormData] = useState({
     title: "",
@@ -24,6 +27,8 @@ export function CreatePollForm() {
   })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const { session } = useAuth()
+  const router = useRouter()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -64,22 +69,29 @@ export function CreatePollForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsLoading(true)
-    const res = await pollsApi.create({ title: formData.title, description: formData.description, options: formData.options.map(o => o.text), ends_at: formData.ends_at })
-    setIsLoading(false)
-    if (!res) {
-      setError("Failed to create poll")
+    if (!session) {
+      setError("You must be logged in to create a poll.")
       return
     }
-    setFormData({
-      title: "",
-      description: "",
-      options: [
-        { id: "1", text: "" },
-        { id: "2", text: "" }
-      ],
-      ends_at: ""
-    })
+    setIsLoading(true)
+    try {
+      const pollData = {
+        title: formData.title,
+        description: formData.description,
+        options: formData.options.map(o => ({ text: o.text })),
+        expiresAt: formData.ends_at ? new Date(formData.ends_at).toISOString() : undefined,
+      };
+      const res = await pollsApi.create(pollData, session.access_token)
+      setIsLoading(false)
+      if (!res) {
+        setError("Failed to create poll")
+        return
+      }
+      router.push("/polls");
+    } catch (error: any) {
+      setIsLoading(false)
+      setError(error.message || "An unexpected error occurred.")
+    }
   }
 
   const isValid = formData.title.trim() && 
