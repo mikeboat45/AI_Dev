@@ -15,23 +15,40 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
   
-  const config: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
   }
 
-  
+  const config: RequestInit = {
+    ...options,
+    headers,
+  }
 
   const response = await fetch(url, config)
   
   if (!response.ok) {
-    throw new ApiError(response.status, `API request failed: ${response.statusText}`)
+    const errorBody = await response.text()
+    try {
+      const errorJson = JSON.parse(errorBody)
+      throw new ApiError(response.status, errorJson.message || `API request failed: ${response.statusText}`)
+    } catch {
+      throw new ApiError(response.status, `API request failed: ${response.statusText} - ${errorBody}`)
+    }
   }
 
-  return response.json()
+  // Handle cases where response might be empty
+  const text = await response.text()
+  try {
+    return JSON.parse(text) as T
+  } catch (e) {
+    // If parsing fails, and text is empty, return null or an empty object
+    // depending on what the caller expects. For a POST that returns nothing, this is fine.
+    if (text === '') {
+      return null as T
+    }
+    throw new Error(`Failed to parse JSON response: ${e}`)
+  }
 }
 
 // Authentication API
@@ -57,14 +74,14 @@ export const authApi = {
   },
 
   getCurrentUser: async (): Promise<User> => {
-    return apiRequest<User>('/auth/me')
+    return apiRequest<User>('/auth/me', {})
   },
 }
 
 // Polls API
 export const pollsApi = {
   getAll: async (): Promise<Poll[]> => {
-    return apiRequest<Poll[]>('/polls')
+    return apiRequest<Poll[]>('/polls', { cache: 'no-store' })
   },
 
   create: async (pollData: CreatePollData): Promise<Poll> => {
