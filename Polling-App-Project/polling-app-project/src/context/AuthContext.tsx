@@ -1,26 +1,29 @@
-"use client";
+'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { SupabaseClient, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 
 type AuthContextType = {
   supabase: SupabaseClient;
   session: Session | null;
+  loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [supabase] = useState(() => createClientComponentClient());
   const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-        // Refresh the server-side session
+        setLoading(false);
         router.refresh();
       }
     );
@@ -28,15 +31,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set the initial session
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+      setLoading(false);
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [router]);
+  }, [router, supabase]);
 
   return (
-    <AuthContext.Provider value={{ supabase, session }}>
+    <AuthContext.Provider value={{ supabase, session, loading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -45,7 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === null) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

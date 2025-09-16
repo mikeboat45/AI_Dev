@@ -1,52 +1,40 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { pollsApi } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
-
-interface PollOption {
-  id: string;
-  text: string;
-  votes: number;
-}
-
-interface Poll {
-  id: string;
-  title: string;
-  description: string;
-  options: PollOption[];
-  totalVotes: number;
-  createdAt: string;
-  createdBy: string;
-  endsAt?: string;
-}
+} from '@/components/ui/card';
+import { pollsApi } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { deletePollAction } from '@/lib/actions/polls';
+import type { Poll } from '@/types/poll';
 
 export function PollCard({ poll }: { poll: Poll }) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formattedEndsAt, setFormattedEndsAt] = useState("");
-  const [formattedCreatedAt, setFormattedCreatedAt] = useState("");
-  const { session } = useAuth();
+  const [formattedEndsAt, setFormattedEndsAt] = useState('');
+  const [formattedCreatedAt, setFormattedCreatedAt] = useState('');
+  const { session, loading } = useAuth();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const isOwner = session?.user?.id === poll.createdBy.id;
 
   useEffect(() => {
     setFormattedCreatedAt(new Date(poll.createdAt).toLocaleDateString());
-    if (poll.endsAt) {
-      setFormattedEndsAt(new Date(poll.endsAt).toLocaleDateString());
+    if (poll.expiresAt) {
+      setFormattedEndsAt(new Date(poll.expiresAt).toLocaleDateString());
     }
-  }, [poll.createdAt, poll.endsAt]);
+  }, [poll.createdAt, poll.expiresAt]);
 
-  const isExpired = poll.endsAt && new Date(poll.endsAt) < new Date();
+  const isExpired = poll.expiresAt && new Date(poll.expiresAt) < new Date();
 
   const handleVote = async () => {
     if (selectedOption && !isExpired && session) {
@@ -59,11 +47,27 @@ export function PollCard({ poll }: { poll: Poll }) {
           setHasVoted(true);
           router.refresh();
         } else {
-          setError("Failed to vote. Please try again.");
+          setError('Failed to vote. Please try again.');
         }
       } catch (error: any) {
-        setError(error.message || "An unexpected error occurred.");
+        setError(error.message || 'An unexpected error occurred.');
       }
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!isOwner) return;
+
+    const confirmed = window.confirm('Are you sure you want to delete this poll?');
+    if (confirmed) {
+      startTransition(async () => {
+        const result = await deletePollAction(poll.id);
+        if (result?.error) {
+          setError(result.error);
+        } else {
+          router.refresh();
+        }
+      });
     }
   };
 
@@ -75,22 +79,37 @@ export function PollCard({ poll }: { poll: Poll }) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          {poll.title}
-          <span
-            className={`text-xs px-2 py-1 rounded-full ${
-              !isExpired
-                ? "bg-green-100 text-green-800"
-                : "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {!isExpired ? "Active" : "Closed"}
-          </span>
-        </CardTitle>
-        <CardDescription>{poll.description}</CardDescription>
-        <div className="text-xs text-gray-500">
-          Created by {poll.createdBy} • {formattedCreatedAt}
-          {formattedEndsAt && <span> • Closes on {formattedEndsAt}</span>}
+        <div className="flex items-start justify-between">
+          <div className="flex-grow">
+            <CardTitle className="flex items-center justify-between">
+              {poll.title}
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${
+                  !isExpired
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {!isExpired ? 'Active' : 'Closed'}
+              </span>
+            </CardTitle>
+            <CardDescription>{poll.description}</CardDescription>
+            <div className="text-xs text-gray-500 pt-1">
+              Created by {poll.createdBy.name} • {formattedCreatedAt}
+              {formattedEndsAt && <span> • Closes on {formattedEndsAt}</span>}
+            </div>
+          </div>
+          {!loading && isOwner && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isPending}
+              className="ml-4 flex-shrink-0"
+            >
+              {isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -111,10 +130,10 @@ export function PollCard({ poll }: { poll: Poll }) {
                 }
                 className={`w-full p-3 text-left border rounded-lg transition-colors ${
                   selectedOption === option.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
                 } ${
-                  hasVoted || isExpired ? "cursor-default" : "cursor-pointer"
+                  hasVoted || isExpired ? 'cursor-default' : 'cursor-pointer'
                 }`}
                 disabled={hasVoted || isExpired}
               >

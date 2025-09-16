@@ -8,7 +8,16 @@ export async function GET() {
   // Get all polls
   const { data: pollsData, error: pollsError } = await supabase
     .from("polls")
-    .select("*")
+    .select(`
+      id,
+      title,
+      description,
+      created_at,
+      expires_at,
+      is_active,
+      total_votes,
+      createdBy:created_by(id, name)
+    `)
     .order("created_at", { ascending: false });
 
   if (pollsError) {
@@ -45,11 +54,16 @@ export async function GET() {
       options: pollOptions,
       totalVotes,
       createdAt: poll.created_at,
-      createdBy: poll.created_by || "Anonymous",
-      endsAt: poll.ends_at,
-      isActive: true,
+      createdBy: {
+        id: poll.createdBy?.id || "unknown",
+        name: poll.createdBy?.name || "Anonymous",
+      },
+      expiresAt: poll.expires_at,
+      isActive: poll.is_active,
     };
   });
+
+  console.log("Data returned by GET /api/polls:", polls);
 
   return NextResponse.json(polls);
 }

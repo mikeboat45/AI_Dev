@@ -11,7 +11,7 @@ export interface Poll {
   options: PollOption[]
   totalVotes: number
   createdAt: string
-  createdBy: string
+  createdBy: { id: string; name: string; }
   isActive: boolean
   expiresAt?: string
   allowMultipleVotes?: boolean

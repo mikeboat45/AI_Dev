@@ -44,11 +44,19 @@ export async function createPollAction(formData: FormData) {
 
 export async function getPolls() {
   const supabase = getSupabaseServerClient();
-  
-  // Get all polls
+
   const { data: pollsData, error: pollsError } = await supabase
     .from("polls")
-    .select("*, created_by(username)")
+    .select(`
+      id,
+      title,
+      description,
+      created_at,
+      expires_at,
+      is_active,
+      total_votes,
+      createdBy:created_by(id, name)
+    `)
     .order("created_at", { ascending: false });
 
   if (pollsError) {
@@ -85,8 +93,12 @@ export async function getPolls() {
       options: pollOptions,
       totalVotes,
       createdAt: poll.created_at,
-      createdBy: poll.created_by.username || "Anonymous",
-      isActive: true,
+      createdBy: {
+        id: poll.createdBy?.id || "unknown",
+        name: poll.createdBy?.name || "Anonymous",
+      },
+      isActive: poll.is_active,
+      expiresAt: poll.expires_at,
     };
   });
 
@@ -125,3 +137,48 @@ export async function voteOnPoll(pollId: string, optionId: string) {
   return { ok: true };
 }
 
+export async function deletePollAction(pollId: string) {
+  if (!pollId) {
+    return { ok: false, error: "Poll ID is required." };
+  }
+
+  const supabase = getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "You must be logged in to delete a poll." };
+  }
+
+  // Verify ownership
+  const { data: poll, error: fetchError } = await supabase
+    .from("polls")
+    .select("created_by")
+    .eq("id", pollId)
+    .single();
+
+  if (fetchError || !poll) {
+    console.log("deletePollAction: Poll not found or not authorized (fetchError/!poll)", { fetchError, poll });
+    return { ok: false, error: "Poll not found." };
+  }
+
+  if (poll.created_by !== user.id) {
+    console.log("deletePollAction: Not authorized (owner mismatch)", { pollCreator: poll.created_by, currentUser: user.id });
+    return { ok: false, error: "You are not authorized to delete this poll." };
+  }
+
+  // Delete the poll
+  const { error: deleteError } = await supabase
+    .from("polls")
+    .delete()
+    .eq("id", pollId);
+
+  if (deleteError) {
+    console.log("deletePollAction: Delete error", deleteError);
+    return { ok: false, error: deleteError.message };
+  }
+
+  revalidatePath("/polls");
+  return { ok: true };
+}
